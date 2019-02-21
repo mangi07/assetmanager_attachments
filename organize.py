@@ -21,11 +21,15 @@ import os
 import hashlib
 from shutil import copy
 from urllib.parse import unquote
+from urllib.parse import urlparse
+import requests
 
 
 filename = sys.argv[1]
+os.mkdir("assets")
+os.mkdir("invoices")
 
-# TODO: test
+
 def hash_fname(filepath):
     try:
         filename, file_extension = os.path.splitext(filepath)
@@ -47,6 +51,7 @@ def hash_fname(filepath):
         print("\nERROR: Fully-qualified file path needed.\nIf you already tried, try again and surround the path with quotes.\n")
         return None
     
+    
 def copy_file(f, dest, should_hash_fname):
     #f = "%r"%f
     f = unquote(f)
@@ -56,56 +61,44 @@ def copy_file(f, dest, should_hash_fname):
         dest = os.path.join(dest, new_fname)
     
     copy(f, dest)
+
+
+def move_files(from_list, folder, should_hash_fname):
+    from_list = from_list.split(',')
+    search_str = '(https|file):/{2,3}([^ }]+)'
     
+    for file_link in from_list:
+        match = re.search(search_str, file_link)
+        if match:
+            protocol = match.group(1)
+            
+            if protocol == "file":
+                url = match.group(2)
+                print(url)
+                copy_file(url, folder, should_hash_fname)
+                
+            elif protocol == "https":
+                url = match.group(0)
+                a = urlparse(url)
+                print(url)
+                dest_fname = os.path.basename(a.path)
+                r = requests.get(url, allow_redirects=True)
+                
+                dest = os.path.join(folder, dest_fname)
+                open(dest, 'wb').write(r.content)
 
-debug_count = 0
-
-
-os.mkdir("assets")
-os.mkdir("invoices")
 
 with open(filename, newline='') as csvfile:
     dialect = csv.Sniffer().sniff(csvfile.read(1024))
     csvfile.seek(0)
     reader = csv.reader(csvfile, dialect)
     
-    
-    search_str = '(https|file):/{2,3}([^ }]+)'
     for row in reader:
-        #print("*****************")
-        #print(row[0], " ", row[1], " ", row[29], " ", row[40])
-        
         id = row[0]
         descr = row[1]
         photos = row[29]
         invoices = row[40]
         
-# TODO: consolidate these operatiosn for photos and invoices into one method
-
-        # make a list for photos
-        photos = photos.split(',')
-        for photo in photos:
-            match = re.search(search_str, photo)
-            if match:
-                protocol = match.group(1)
-                url = match.group(2)
-                
-                if protocol == "file":
-                    copy_file(url, "assets", False)
-                elif protocol == "https":
-                    # TODO: fetch from internet and save to destination instead of doing...
-                    #copy_file(url, "assets", True)
-                    pass
+        move_files(photos, "assets", False)
+        move_files(invoices, "invoices", True)
         
-        invoices = invoices.split(',')
-        for invoice in invoices:
-            match = re.search(search_str, invoice)
-            if match:
-                protocol = match.group(1)
-                url = match.group(2)
-
-                if protocol == "file":
-                        print(url)
-                        copy_file(url, "invoices", True)
-                elif protocol == "https":
-                    pass

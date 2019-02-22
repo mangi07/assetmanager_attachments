@@ -28,6 +28,8 @@ import requests
 filename = sys.argv[1]
 os.mkdir("assets")
 os.mkdir("invoices")
+copied_files = []
+file_counter = 0
 
 
 def hash_fname(filepath):
@@ -51,14 +53,24 @@ def hash_fname(filepath):
         print("\nERROR: Fully-qualified file path needed.\nIf you already tried, try again and surround the path with quotes.\n")
         return None
     
+
+def get_dest_path(folder, file):
+    global file_counter
+    name, ext = os.path.splitext(file)
+    dest = os.path.join(folder, str(file_counter)+ext)
+    file_counter = file_counter + 1
+    return dest
+    
     
 def copy_file(f, dest, should_hash_fname):
-    #f = "%r"%f
     f = unquote(f)
     
     if should_hash_fname:
         new_fname = hash_fname(f)
         dest = os.path.join(dest, new_fname)
+    else:
+        dest = get_dest_path(dest, f)
+        print(dest)
     
     copy(f, dest)
 
@@ -68,6 +80,9 @@ def move_files(from_list, folder, should_hash_fname):
     search_str = '(https|file):/{2,3}([^ }]+)'
     
     for file_link in from_list:
+        if file_link in copied_files:
+            continue
+        
         match = re.search(search_str, file_link)
         if match:
             protocol = match.group(1)
@@ -81,11 +96,17 @@ def move_files(from_list, folder, should_hash_fname):
                 url = match.group(0)
                 a = urlparse(url)
                 print(url)
-                dest_fname = os.path.basename(a.path)
                 r = requests.get(url, allow_redirects=True)
                 
-                dest = os.path.join(folder, dest_fname)
+                dest = get_dest_path(folder, url)
                 open(dest, 'wb').write(r.content)
+                
+            copied_files.append(file_link)
+        
+        elif re.search('C:/.+', file_link):
+            copy_file(file_link, folder, should_hash_fname)
+            
+            copied_files.append(file_link)
 
 
 with open(filename, newline='') as csvfile:

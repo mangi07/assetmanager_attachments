@@ -12,6 +12,8 @@ Some are on the local file system and others require download over https.
 
 New csv should be output as well, indicating the new file locations of asset attachments,
 which will make it easier to link the attachments after csv import to django db.
+
+TODO: may be better with class-based preprocessing on file urls - separate out the file operations from csv data
 """
 
 import csv
@@ -26,6 +28,8 @@ import requests
 
 
 filename = sys.argv[1]
+new_filename = filename + "_new"
+
 os.mkdir("assets")
 os.mkdir("invoices")
 copied_files = []
@@ -73,14 +77,20 @@ def copy_file(f, dest, should_hash_fname):
         print(dest)
     
     copy(f, dest)
+    
+    return dest
 
 
 def move_files(from_list, folder, should_hash_fname):
+    new_paths = []
+    dest = ""
     from_list = from_list.split(',')
     search_str = '(https|file):/{2,3}([^ }]+)'
     
     for file_link in from_list:
         if file_link in copied_files:
+            # TODO: find old path that matches new path - probably need to refactor to make copied_files a dict with old path the key of new path value
+            #new_paths.append(...)
             continue
         
         match = re.search(search_str, file_link)
@@ -89,13 +99,13 @@ def move_files(from_list, folder, should_hash_fname):
             
             if protocol == "file":
                 url = match.group(2)
-                print(url)
-                copy_file(url, folder, should_hash_fname)
+                #print(url)
+                dest = copy_file(url, folder, should_hash_fname)
                 
             elif protocol == "https":
                 url = match.group(0)
                 a = urlparse(url)
-                print(url)
+                #print(url)
                 r = requests.get(url, allow_redirects=True)
                 
                 dest = get_dest_path(folder, url)
@@ -104,9 +114,13 @@ def move_files(from_list, folder, should_hash_fname):
             copied_files.append(file_link)
         
         elif re.search('C:/.+', file_link):
-            copy_file(file_link, folder, should_hash_fname)
+            dest = copy_file(file_link, folder, should_hash_fname)
             
             copied_files.append(file_link)
+            
+        new_paths.append(dest)
+            
+    return new_paths
 
 
 with open(filename, newline='') as csvfile:
@@ -120,6 +134,12 @@ with open(filename, newline='') as csvfile:
         photos = row[29]
         invoices = row[40]
         
-        move_files(photos, "assets", False)
-        move_files(invoices, "invoices", True)
+        new_photo_paths = move_files(photos, "assets", False)
+        new_invoice_paths = move_files(invoices, "invoices", True)
+        
+        row[29] = new_photo_paths
+        row[40] = new_invoice_paths
+        
+        print("*******************")
+        print(row)
         

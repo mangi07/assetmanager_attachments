@@ -28,7 +28,7 @@ import requests
 
 
 filename = sys.argv[1]
-new_filename = filename + "_new"
+new_filename = "new.csv"
 
 os.mkdir("assets")
 os.mkdir("invoices")
@@ -74,11 +74,10 @@ def copy_file(f, dest, should_hash_fname):
     if should_hash_fname:
         new_fname = hash_fname(f)
         dest = os.path.join(dest, new_fname)
-        #print("dest of hashed file:" + dest) # debug
     else:
         dest = get_dest_path(dest, f)
     
-    #copy(f, dest) # debug: remove to actually copy files
+    copy(f, dest)
     
     return dest
 
@@ -103,18 +102,15 @@ def move_files(from_list, folder, should_hash_fname):
             
             if protocol == "file":
                 url = match.group(2)
-                #print(url)
                 dest = copy_file(url, folder, should_hash_fname)
                 
             elif protocol == "https":
                 url = match.group(0)
                 #a = urlparse(url)
-                #print(url)
-                #print("waiting for http request to complete")
                 r = requests.get(url, allow_redirects=True)
                 
                 dest = get_dest_path(folder, url)
-                #open(dest, 'wb').write(r.content) # debug: uncomment when done debugging
+                open(dest, 'wb').write(r.content)
                 
             copied_files[file_link] = dest
         
@@ -129,26 +125,36 @@ def move_files(from_list, folder, should_hash_fname):
     return new_paths
 
 
-with open(filename, newline='') as csvfile:
+
+
+with open(filename, 'r', newline='') as csvfile:
     dialect = csv.Sniffer().sniff(csvfile.read(1024))
     csvfile.seek(0)
     reader = csv.reader(csvfile, dialect)
     
     for row in reader:
+        print(type(row))
         id = row[0]
         descr = row[1]
         photos = row[29]
         invoices = row[40]
-        
+
+        # TODO: catch runtime errors such as file not found
+        # TODO: and append the row causing error to a separate csv to be dealt with later
+        # TODO: because we want the script to make one pass through the original asset listing without stopping
         new_photo_paths = move_files(photos, "assets", False)
         new_invoice_paths = move_files(invoices, "invoices", True)
         
-        print("photo links: " + str(new_photo_paths))
-        print("invoice links: " + str(new_invoice_paths))
-        
         row[29] = new_photo_paths
         row[40] = new_invoice_paths
-        
-        #print("*******************") # debug
-        #print(row) # debug
-        
+        # TODO: convert cells of this nature -- '['']' OR '['','']' etc. -- to this: ''
+
+        with open(new_filename, 'a', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(row)
+
+        # debug
+        print("*******************")
+        print(row)
+        print("photo links: " + str(new_photo_paths))
+        print("invoice links: " + str(new_invoice_paths))

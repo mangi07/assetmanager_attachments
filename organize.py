@@ -32,7 +32,7 @@ new_filename = filename + "_new"
 
 os.mkdir("assets")
 os.mkdir("invoices")
-copied_files = []
+copied_files = {} # key: old path, value: new path (dest)
 file_counter = 0
 
 
@@ -59,6 +59,7 @@ def hash_fname(filepath):
     
 
 def get_dest_path(folder, file):
+    """Returns a filepath: directory + filename"""
     global file_counter
     name, ext = os.path.splitext(file)
     dest = os.path.join(folder, str(file_counter)+ext)
@@ -67,16 +68,17 @@ def get_dest_path(folder, file):
     
     
 def copy_file(f, dest, should_hash_fname):
+    """Returns a filepath: directory + filename"""
     f = unquote(f)
     
     if should_hash_fname:
         new_fname = hash_fname(f)
         dest = os.path.join(dest, new_fname)
+        #print("dest of hashed file:" + dest) # debug
     else:
         dest = get_dest_path(dest, f)
-        print(dest)
     
-    copy(f, dest)
+    #copy(f, dest) # debug: remove to actually copy files
     
     return dest
 
@@ -89,8 +91,10 @@ def move_files(from_list, folder, should_hash_fname):
     
     for file_link in from_list:
         if file_link in copied_files:
-            # TODO: find old path that matches new path - probably need to refactor to make copied_files a dict with old path the key of new path value
-            #new_paths.append(...)
+            # Find old path that matches new path so this *.csv entry knows and records where the file was moved.
+            # This is needed so that the photo's new path will be known in the updated *.csv entry
+            dest = copied_files[file_link]
+            new_paths.append(dest)
             continue
         
         match = re.search(search_str, file_link)
@@ -104,20 +108,22 @@ def move_files(from_list, folder, should_hash_fname):
                 
             elif protocol == "https":
                 url = match.group(0)
-                a = urlparse(url)
+                #a = urlparse(url)
                 #print(url)
+                #print("waiting for http request to complete")
                 r = requests.get(url, allow_redirects=True)
                 
                 dest = get_dest_path(folder, url)
-                open(dest, 'wb').write(r.content)
+                #open(dest, 'wb').write(r.content) # debug: uncomment when done debugging
                 
-            copied_files.append(file_link)
+            copied_files[file_link] = dest
         
         elif re.search('C:/.+', file_link):
             dest = copy_file(file_link, folder, should_hash_fname)
             
-            copied_files.append(file_link)
-            
+            copied_files[file_link] = dest
+
+        #print(dest) # debug
         new_paths.append(dest)
             
     return new_paths
@@ -137,9 +143,12 @@ with open(filename, newline='') as csvfile:
         new_photo_paths = move_files(photos, "assets", False)
         new_invoice_paths = move_files(invoices, "invoices", True)
         
+        print("photo links: " + str(new_photo_paths))
+        print("invoice links: " + str(new_invoice_paths))
+        
         row[29] = new_photo_paths
         row[40] = new_invoice_paths
         
-        print("*******************")
-        print(row)
+        #print("*******************") # debug
+        #print(row) # debug
         

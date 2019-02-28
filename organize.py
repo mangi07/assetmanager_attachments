@@ -34,6 +34,7 @@ os.mkdir("assets")
 os.mkdir("invoices")
 copied_files = {} # key: old path, value: new path (dest)
 file_counter = 0
+debug_counter = 0
 
 
 def hash_fname(filepath):
@@ -91,7 +92,7 @@ def move_files(from_list, folder, should_hash_fname):
     for file_link in from_list:
         if file_link in copied_files:
             # Find old path that matches new path so this *.csv entry knows and records where the file was moved.
-            # This is needed so that the photo's new path will be known in the updated *.csv entry
+            # This is needed so that the photo's new path will be known in the updated *.csv entry.
             dest = copied_files[file_link]
             new_paths.append(dest)
             continue
@@ -108,6 +109,7 @@ def move_files(from_list, folder, should_hash_fname):
                 url = match.group(0)
                 #a = urlparse(url)
                 r = requests.get(url, allow_redirects=True)
+                debug_counter = debug_counter + 1
                 
                 dest = get_dest_path(folder, url)
                 open(dest, 'wb').write(r.content)
@@ -133,7 +135,6 @@ with open(filename, 'r', newline='') as csvfile:
     reader = csv.reader(csvfile, dialect)
     
     for row in reader:
-        print(type(row))
         id = row[0]
         descr = row[1]
         photos = row[29]
@@ -142,8 +143,13 @@ with open(filename, 'r', newline='') as csvfile:
         # TODO: catch runtime errors such as file not found
         # TODO: and append the row causing error to a separate csv to be dealt with later
         # TODO: because we want the script to make one pass through the original asset listing without stopping
-        new_photo_paths = move_files(photos, "assets", False)
-        new_invoice_paths = move_files(invoices, "invoices", True)
+        try:
+            new_photo_paths = move_files(photos, "assets", False)
+            new_invoice_paths = move_files(invoices, "invoices", True)
+        except:
+            with open("errors.csv", 'a', newline='') as ef:
+                writer = csv.writer(ef)
+                writer.writerow(row)
         
         row[29] = new_photo_paths
         row[40] = new_invoice_paths
@@ -158,3 +164,6 @@ with open(filename, 'r', newline='') as csvfile:
         print(row)
         print("photo links: " + str(new_photo_paths))
         print("invoice links: " + str(new_invoice_paths))
+
+# debug
+print("\n\nNumber of http(s) requests: " + debug_counter)

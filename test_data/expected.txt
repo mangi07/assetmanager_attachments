@@ -1,0 +1,81 @@
+Test Directions:
+
+Copy folders "asset_test_dir1" and "asset_test_dir2" to your documents folder and change the username in the links of sample.csv.
+run with python 3:
+  python organize.py test_data/sample.csv
+
+
+
+
+
+
+
+
+Expected Test Exports:
+
+
+
+1st row (headers): cannot download links in column AD (30th column, "Photo Links").
+Row copied to: errors.csv
+Expected row changes: no change
+
+2nd row (1st asset): cannot download links in column AO (41st column, "INVOICE LINKS").
+Row copied to: errors.csv
+Expected row changes: no change
+
+3rd row (2nd asset): bear pic gets copied to "assets" folder as "1.png".
+Row copied to: new.csv
+Expected row changes: "Photo Links" column AD shows "[1.png]".
+
+4th row (3rd asset): 3 *.png files get copies to "assets" folder as "2.png", "3.png", and "4.png".
+Row copied to: new.csv
+Expected row changes: "Photo Links" column AD shows "[2.png, 3.png, 4.png]".
+
+5th row (4th asset): *.png file gets copied to "assets" folder as "5.png" and *.pdf file gets copied to "invoices" as "[<hash1>.pdf]" (invoice template).
+Row copied to: new.csv
+Expected row changes: "Photo Links" column AD shows "[5.png]" and "INVOICE LINKS" column AO shows "[<hash1>.pdf]".
+
+6th row (5th asset): *.png file gets copied to "assets" folder as "6.png" and *.pdf file gets copied to "invoices" as "[<hash2>.pdf]".
+  Also, 2 *.txt files linked in "OTHER LINKS" column get copied to "other" folder as "o1.txt" and "o2.txt".
+Row copied to: new.csv
+Expected row changes: "Photo Links" column AD shows "[6.png]" and "INVOICE LINKS" column AO shows "[<hash2>.pdf]" (mirror invoice).
+  Also, "OTHER LINKS" column shows ["o1.txt", "o2.txt"].
+
+7th row (6th asset): no files copied
+Row copied to: new.csv
+Expected row changes: no change
+
+8th row (7th asset): *.png file gets copied to "assets" folder as "7.png".
+Row copied to: new.csv
+Expected row changes:  "Photo Links" column AD shows "[7.png]".
+
+9th row (8th asset): cannot download links in column AD (30th column, "Photo Links").
+Row copied to: errors.csv
+Expected row changes: no change
+
+10th row (9th asset): no files copied
+Row copied to: new.csv
+Expected row changes: no change
+
+11th row (10th asset): no files copied even though links present in the relevant columns,
+  because these files have already been downloaded.
+Row copied to: new.csv
+Expected row changes: "Photo Links" column AD shows "[5.png]" and "INVOICE LINKS" column AO shows "[<hash1>.pdf]"  (invoice template).
+  This should be the same as what shows in the 5th row.
+
+12th row (11th asset): no files copied from "Photo Links" column
+  but *.pdf downloaded into "invoices" folder as "[<hash3>.pdf, <hash4>.pdf]" ("chairs, beds, microwaves" invoices 1 and 2).
+Row copied to: new.csv
+Expected row changes: "Photo Links" column AD shows "[6.png]" and "INVOICE LINKS" column AO shows "[<hash3>.pdf, <hash4>.pdf]" ("chairs, beds, microwaves" invoices 1 and 2).
+
+13th row (12th asset): no files copied
+Row copied to: new.csv
+Expected row changes: "INVOICE LINKS" column AO shows "[<hash3>.pdf, <hash4>.pdf]" ("chairs, beds, microwaves" invoices 1 and 2).
+
+14th row (13th asset): no files copied
+Row copied to: new.csv
+Expected row changes: "INVOICE LINKS" column AO shows "[<hash3>.pdf, <hash4>.pdf]" ("chairs, beds, microwaves" invoices 1 and 2).
+
+
+Total expected file downloads: 9
+Total expected file copies from local drive: 2

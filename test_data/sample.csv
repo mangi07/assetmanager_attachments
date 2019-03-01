@@ -1,0 +1,38 @@
+Item Number,Description,Location,Building,Classification,Type,Model Number,Serial Number,Area Number,Prev. Area (Loc.),Placed in Service,Removed From Service,Area Description,Warranty Expiration Date,Manufacturer,Actual Purchase Cost,Life Expectancy ,Life Expectancy Unit,Notes,Brand New / List Price / MSRP,FAR,Supplier,INVOICE/ORDER/RECEIPT #,SHIPPING COST,Department,Specific Type,Bulk Entry Count,(Est.) Cost per item for bulk entry,Online System,"Photo Links {link, link, link...}",,,,Save Per Year,Replacement Due Date,Status,Audit - Most Recent,Replacing asset…,REQUISITION,RECEIVING,INVOICE LINKS,OTHER LINKS,Flagged for possible move
+0,ardvark,On Campus Building,Animal House,Current,Recreational Equipment,A123,1111,AH-1,,1-Jun-09,,,,Animal Factory,0,5,Years,"Matching AHU asset # 153 (nw small mech. rm. 205)
+
+Cools Fellowship Halls (rms. 106,107) ?
+
+SPCU-4
+A-27 Belt
+
+Manufacture Date: 21/01/2008
+
+Soft duct-work through floor.
+Metal duct-work.",150000,,"The Home Depot, Tamuning",,10,SCHOOL,Animal,,,MaintDir,{https://www.pdclipart.org/albums/1/Aardvark.png},,,,,,,,,,,{https://google.com/f4.gh3$xhsl.jpeg},,
+1,bear,On Campus Building,Animal House,Current,Recreational Equipment,B123,2222,AH-2,,30-Sep-17,,,,Big Beasts Business,139052,5,Years,"FAR: 16020, 217",200000,,"The Home Depot, Tamuning",,10,SCHOOL,Animal,,,MaintDir,{https://www.pdclipart.org/albums/Cartoon_Characters/normal_bear_where_s_my_hug.png},,,,,,,,,,,,,
+2,chimp,On Campus Building,Animal House,Current,Recreational Equipment,C123,3333,AH-3,AH-1,43202,,,,Animal Factory,2819.86,5,Years,"AHU (w./ refrigerant R410A): $1140
+Condensing unit (3 ton, 16 SEER): $1567.50
+Original cost includes the cost of installation materials: $93 + 19.36
+TOTAL: $2819.86
+
+PO-500594 ($2707.50 for 2 units)
+Sales receipt # 12155, ACC Air
+",,,"The Home Depot, Tamuning",12155,10,MAINTENANCE,Animal,,,MaintDir,"{https://www.pdclipart.org/albums/Animals_Primates/thumb_dancing_monkey.png, https://www.pdclipart.org/albums/Animals_Primates/thumb_monkey_head.png, https://www.pdclipart.org/albums/Animals_Primates/thumb_monkey_icon.png}",,,,,,,,,,,,,
+3,small chair (shared pic and invoice),On Campus Building,Animal House,Current,Furniture,F1,AAAA,,,41220,,,,,30,5,Years,"Fixed Asset Register: 16020, 158
+
+Wire Transfer - Aten Solar Corp	JV082114	1/31/2013	 31,904.55
++
+$4471.01 shipping from CA to GU
+
+Date placed is an estimate.
+",,"16020, 158","The Home Depot, Tamuning",,,MAINTENANCE,,,,MaintDir,{https://www.pdclipart.org/albums/Education/thumb_student_chair_angle_view.png},,,,,,,,,,,{https://toggl.com/landing/files/editable-invoice-template.pdf},,
+4,mirror,Staff Housing,Zoo Lodge,Current,Furniture,F2,BBBB,,,43327,,,43691,,100,5,Years,,,,"The Home Depot, Tamuning",1710 00017 15770,,,,,,,{file:///C:/Users/ben.olson/Documents/asset_test_dir1/assets/thumb_head_mirror.png},,,,,,,,,,,C:\Users\ben.olson\Documents\asset_test_dir1\invoices\Invoice for mirror.pdf,"file:///C:/Users/ben.olson/Documents/asset_test_dir1/invoices/specs.txt, C:/Users/ben.olson/Documents/asset_test_dir1/invoices/details.txt",
+5,table,Staff Housing,Zoo Lodge,Current,Furniture,F2,BBB1,,,43327,,,43691,,200,5,Years,,,,"The Home Depot, Tamuning",,,,,,,,,,,,,,,,,,,,,
+TODO,lawn mower,Staff Housing,Zoo Lodge,Current,Appliances,,,,,43202,,,,,3000,5,Years,PO-500697,,TODO,Agbayani Air Conditioning & Refrigeration (ACC Air),,,HOUSING,,,,MaintDir,{https://www.pdclipart.org/albums/Cartoon_Characters/thumb_cutting_lawn.png},,,,,,,,,paid in full,placed,,,
+6,mixer,Staff Housing,Zoo Lodge,Current,Appliances,,,,,43202,,,,,249.99,5,Years,PO-500697,,TODO,Agbayani Air Conditioning & Refrigeration (ACC Air),,,HOUSING,,,,MaintDir,{https://google.com/f4.gh3$xhsl.jpeg},,,,,,,,,paid in full,placed,,,
+"TODO - needs item number, description, and some other fields filled in",,Staff Housing,Zoo Lodge,Current,Vehicles,,,,,43202,,,,,,5,Years,PO-500697,,TODO,Agbayani Air Conditioning & Refrigeration (ACC Air),,,HOUSING,,,,MaintDir,,,,,,,,,,paid in full,placed,,,
+7,small chair (shared pic and invoice),Staff Housing,Zoo Lodge,Current,Vehicles,,,,,43202,,,,,30,5,Years,PO-500697,,TODO,Agbayani Air Conditioning & Refrigeration (ACC Air),,,HOUSING,,,,MaintDir,{https://www.pdclipart.org/albums/Education/thumb_student_chair_angle_view.png},,,,,,,,,paid in full,placed,{https://toggl.com/landing/files/editable-invoice-template.pdf},,
+8,chairs - bulk (shared invoices),Staff Housing,Crazy Cabin,Current,Furniture,,,,,43315,,,,,25,5,Years,PO-500100,,,Town House Furniture,102063,,HOUSING,,,,,{https://www.pdclipart.org/albums/Education/thumb_student_chair_angle_view.png},,,,,,,,,partial payment,placed,"{file:///C:/Users/ben.olson/Documents/asset_test_dir2/invoices/Shared%20invoice%20for%20chairs,%20beds,%20microwaves%20-%201.pdf, file:///C:/Users/ben.olson/Documents/asset_test_dir2/invoices/Shared%20invoice%20for%20chairs,%20beds,%20microwaves%20-%202.pdf""",,
+9,beds - bulk (shared invoices),Staff Housing,Crazy Cabin,Current,Furniture,,,,,43315,,,,,25,5,Years,PO-500100,,,Town House Furniture,102063,,HOUSING,,,,,,,,,,,,,,partial payment,placed,"{file:///C:/Users/ben.olson/Documents/asset_test_dir2/invoices/Shared%20invoice%20for%20chairs,%20beds,%20microwaves%20-%201.pdf, file:///C:/Users/ben.olson/Documents/asset_test_dir2/invoices/Shared%20invoice%20for%20chairs,%20beds,%20microwaves%20-%202.pdf""",,
+10,microwaves - bulk (shared invoices),Staff Housing,Crazy Cabin,Current,Appliances,,,,,43315,,,,,25,5,Years,PO-500100,,,Town House Furniture,102063,,HOUSING,,,,,,,,,,,,,,partial payment,placed,"{file:///C:/Users/ben.olson/Documents/asset_test_dir2/invoices/Shared%20invoice%20for%20chairs,%20beds,%20microwaves%20-%201.pdf, file:///C:/Users/ben.olson/Documents/asset_test_dir2/invoices/Shared%20invoice%20for%20chairs,%20beds,%20microwaves%20-%202.pdf""",,

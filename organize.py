@@ -13,7 +13,7 @@ Some are on the local file system and others require download over https.
 New csv should be output as well, indicating the new file locations of asset attachments,
 which will make it easier to link the attachments after csv import to django db.
 
-TODO: may be better with class-based preprocessing on file urls - separate out the file operations from csv data
+TODO: may be better with class-based preprocessing on file urls - separate out the file operations from csv data parsing
 """
 
 import csv
@@ -30,8 +30,10 @@ import requests
 filename = sys.argv[1]
 new_filename = "new.csv"
 
-os.mkdir("assets")
-os.mkdir("invoices")
+if not os.path.isdir("assets"):
+    os.mkdir("assets")
+if not os.path.isdir("invoices"):
+    os.mkdir("invoices")
 copied_files = {} # key: old path, value: new path (dest)
 file_counter = 0
 debug_counter = 0
@@ -84,6 +86,7 @@ def copy_file(f, dest, should_hash_fname):
 
 
 def move_files(from_list, folder, should_hash_fname):
+    global debug_counter
     new_paths = []
     dest = ""
     from_list = from_list.split(',')
@@ -110,9 +113,13 @@ def move_files(from_list, folder, should_hash_fname):
                 #a = urlparse(url)
                 r = requests.get(url, allow_redirects=True)
                 debug_counter = debug_counter + 1
-                
-                dest = get_dest_path(folder, url)
-                open(dest, 'wb').write(r.content)
+                if should_hash_fname:
+                    url = hash_fname(url)
+                    print(dest)
+                else:
+                    dest = get_dest_path(folder, url)
+                open(dest, 'wb').write(r.content) # bug here: should have checked r.content
+                #print(file_link)
                 
             copied_files[file_link] = dest
         
@@ -150,6 +157,8 @@ with open(filename, 'r', newline='') as csvfile:
             with open("errors.csv", 'a', newline='') as ef:
                 writer = csv.writer(ef)
                 writer.writerow(row)
+                file_counter = file_counter - 1
+                continue
         
         row[29] = new_photo_paths
         row[40] = new_invoice_paths
@@ -160,10 +169,10 @@ with open(filename, 'r', newline='') as csvfile:
             writer.writerow(row)
 
         # debug
-        print("*******************")
-        print(row)
-        print("photo links: " + str(new_photo_paths))
-        print("invoice links: " + str(new_invoice_paths))
+        #print("*******************")
+        #print(row)
+        #print("photo links: " + str(new_photo_paths))
+        #print("invoice links: " + str(new_invoice_paths))
 
 # debug
-print("\n\nNumber of http(s) requests: " + debug_counter)
+print("\n\nNumber of http(s) requests: " + str(debug_counter))

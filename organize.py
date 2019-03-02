@@ -25,6 +25,7 @@ from shutil import copy
 from urllib.parse import unquote
 from urllib.parse import urlparse
 import requests
+from PIL import Image
 
 
 filename = sys.argv[1]
@@ -34,6 +35,8 @@ if not os.path.isdir("assets"):
     os.mkdir("assets")
 if not os.path.isdir("invoices"):
     os.mkdir("invoices")
+if not os.path.isdir("temp"):
+    os.mkdir("temp")
 copied_files = {} # key: old path, value: new path (dest)
 file_counter = 0
 debug_counter = 0
@@ -66,74 +69,97 @@ def get_dest_path(folder, file):
     global file_counter
     name, ext = os.path.splitext(file)
     dest = os.path.join(folder, str(file_counter)+ext)
-    file_counter = file_counter + 1
     return dest
     
     
-def copy_file(f, dest, should_hash_fname):
+def copy_file(f, folder, should_hash_fname):
     """Returns a filepath: directory + filename"""
+    global file_counter
     f = unquote(f)
     
     if should_hash_fname:
         new_fname = hash_fname(f)
-        dest = os.path.join(dest, new_fname)
+        dest = os.path.join(folder, new_fname)
     else:
-        dest = get_dest_path(dest, f)
+        dest = get_dest_path(folder, f)
     
     copy(f, dest)
+    if folder.endswith("assets"):
+        file_counter = file_counter + 1
     
     return dest
+
+
+def get_file_type(filepath):
+    filename, ext = os.path.splitext(filepath)
+    print("In get_file_ext: " + ext)
+    ext == ext.lower()
+    if ext == ".jpg" or ext == ".jpeg" or ext == ".png" or ext == ".gif" or ext == ".png":
+        return "image"
+    elif ext == ".pdf":
+        return "pdf"
+    return "unknown"
+
+
+# TODO: function here to check for corrupt image and pdf files, then img check in elif https protocol move here
+def verify_file(filepath):
+    file_type = get_file_type(filepath)
+    if file_type == "image":
+        try:
+            with Image.open(filepath, mode="r") as img:
+                img.verify()
+            return True
+        except:
+            print(filepath + " not a valid file")
+            return False
+    elif file_type == "pdf":
+        return True
+    return False
 
 
 def move_files(from_list, folder, should_hash_fname):
     global debug_counter
     new_paths = []
-    dest = ""
+    dest = None
     from_list = from_list.split(',')
     search_str = '(https|file):/{2,3}([^ }]+)'
     
     for file_link in from_list:
         if file_link in copied_files:
-            # Find old path that matches new path so this *.csv entry knows and records where the file was moved.
-            # This is needed so that the photo's new path will be known in the updated *.csv entry.
+            # In this case, the file referred to in this row was already moved during a previous row iteration.
+            # Find and and record where the file was copied to for this new *.csv entry.
             dest = copied_files[file_link]
             new_paths.append(dest)
             continue
-        
         match = re.search(search_str, file_link)
         if match:
             protocol = match.group(1)
-            
             if protocol == "file":
                 url = match.group(2)
                 dest = copy_file(url, folder, should_hash_fname)
-                
             elif protocol == "https":
                 url = match.group(0)
                 #a = urlparse(url)
                 r = requests.get(url, allow_redirects=True)
                 debug_counter = debug_counter + 1
-                if should_hash_fname:
-                    url = hash_fname(url)
-                    print(dest)
+                # download the file to a temp dir
+                # check file contents are readable as image file (exception thrown if not)
+                # if so, simply call function copy_file
+                temp_path = get_dest_path("temp", url)
+                open(temp_path, 'wb').write(r.content)
+                if verify_file(temp_path):
+                    dest = copy_file(temp_path, folder, should_hash_fname)
+                    os.remove(temp_path)
                 else:
-                    dest = get_dest_path(folder, url)
-                open(dest, 'wb').write(r.content) # bug here: should have checked r.content
-                #print(file_link)
-                
+                    os.remove(temp_path)
+                    raise Exception
             copied_files[file_link] = dest
-        
-        elif re.search('C:/.+', file_link):
+        elif re.search('C:[/\\\\].+', file_link):
             dest = copy_file(file_link, folder, should_hash_fname)
-            
             copied_files[file_link] = dest
-
-        #print(dest) # debug
-        new_paths.append(dest)
-            
+        if dest is not None:
+            new_paths.append(dest)
     return new_paths
-
-
 
 
 with open(filename, 'r', newline='') as csvfile:
@@ -147,21 +173,24 @@ with open(filename, 'r', newline='') as csvfile:
         photos = row[29]
         invoices = row[40]
 
-        # TODO: catch runtime errors such as file not found
-        # TODO: and append the row causing error to a separate csv to be dealt with later
-        # TODO: because we want the script to make one pass through the original asset listing without stopping
+        # catch runtime errors such as file not found
+        # and append the row causing error to a separate csv to be dealt with later
+        # because we want the script to make one pass through the original asset listing without stopping
         try:
             new_photo_paths = move_files(photos, "assets", False)
+            if len(new_photo_paths) > 0:
+                row[29] = new_photo_paths
+
             new_invoice_paths = move_files(invoices, "invoices", True)
+            if len(new_invoice_paths) > 0:
+                row[40] = new_invoice_paths
+
+            # TODO: get files from "OTHER LINKS" column
         except:
             with open("errors.csv", 'a', newline='') as ef:
                 writer = csv.writer(ef)
                 writer.writerow(row)
-                file_counter = file_counter - 1
                 continue
-        
-        row[29] = new_photo_paths
-        row[40] = new_invoice_paths
         # TODO: convert cells of this nature -- '['']' OR '['','']' etc. -- to this: ''
 
         with open(new_filename, 'a', newline='') as f:

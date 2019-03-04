@@ -154,6 +154,7 @@ def move_files(from_list, folder, should_hash_fname):
                     os.remove(temp_path)
                     raise Exception
             copied_files[file_link] = dest
+        # TODO: this regex is not quite right with the number of slashes
         elif re.search('C:[/\\\\].+', file_link):
             dest = copy_file(file_link, folder, should_hash_fname)
             copied_files[file_link] = dest

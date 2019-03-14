@@ -14,6 +14,11 @@ New csv should be output as well, indicating the new file locations of asset att
 which will make it easier to link the attachments after csv import to django db.
 
 TODO: may be better with class-based preprocessing on file urls - separate out the file operations from csv data parsing
+
+ARGUMENTS:
+<filename>.csv : the name of the file to process
+pic_start_num : the starting number for asset pics to be named
+
 """
 
 import csv
@@ -30,6 +35,8 @@ from PIL import Image
 
 filename = sys.argv[1]
 new_filename = "new.csv"
+pic_start_num = int(sys.argv[2])
+
 
 if not os.path.isdir("assets"):
     os.mkdir("assets")
@@ -38,7 +45,7 @@ if not os.path.isdir("invoices"):
 if not os.path.isdir("temp"):
     os.mkdir("temp")
 copied_files = {} # key: old path, value: new path (dest)
-file_counter = 0
+file_counter = pic_start_num
 debug_counter = 0
 
 
@@ -60,7 +67,9 @@ def hash_fname(filepath):
         return newfilename
 
     except:
-        print("\nERROR: Fully-qualified file path needed.\nIf you already tried, try again and surround the path with quotes.\n")
+        print("\nERROR: Could not read path: " + filepath + "\n" +
+            "Fully-qualified file path needed.\n" +
+            "If you already tried, try again and surround the path with quotes.\n")
         return None
     
 
@@ -92,8 +101,7 @@ def copy_file(f, folder, should_hash_fname):
 
 def get_file_type(filepath):
     filename, ext = os.path.splitext(filepath)
-    print("In get_file_ext: " + ext)
-    ext == ext.lower()
+    ext = ext.lower()
     if ext == ".jpg" or ext == ".jpeg" or ext == ".png" or ext == ".gif" or ext == ".png":
         return "image"
     elif ext == ".pdf":
@@ -122,7 +130,7 @@ def move_files(from_list, folder, should_hash_fname):
     new_paths = []
     dest = None
     from_list = from_list.split(',')
-    search_str = '(https|file):/{2,3}([^ }]+)'
+    search_str = '(http|https|file):/{2,3}([^ }]+)'
     
     for file_link in from_list:
         if file_link in copied_files:
@@ -137,29 +145,40 @@ def move_files(from_list, folder, should_hash_fname):
             if protocol == "file":
                 url = match.group(2)
                 dest = copy_file(url, folder, should_hash_fname)
-            elif protocol == "https":
+            elif protocol == "https" or protocol == "http":
                 url = match.group(0)
+                print(url)
                 #a = urlparse(url)
                 r = requests.get(url, allow_redirects=True)
                 debug_counter = debug_counter + 1
                 # download the file to a temp dir
-                # check file contents are readable as image file (exception thrown if not)
+                # check file contents are readable as image file
                 # if so, simply call function copy_file
                 temp_path = get_dest_path("temp", url)
                 open(temp_path, 'wb').write(r.content)
+                # TODO: bug was not caught where, in a group of online file attachments belonging to an asset,
+                # TODO:     one of them fails to download or downloads a corrupt file,
+                # TODO:     so that previous successful downloads/copies to "assets" were not added to new_paths
+                # TODO:     since the else clause raised an exception.
+                # TODO:     Solution: make sure all successful downloads/copies to "assets" are added to new_paths
+                # TODO:     so that row[29] (representing list of photo file paths) is set correcly in the 'with' clause below.
+                # TODO:     To test this, try assets 0 through 10 to see if photo 'assets\\30.JPG'
+                # TODO:     (and the other successful files also belonging to asset # 9) is properly referenced in errors.csv
                 if verify_file(temp_path):
                     dest = copy_file(temp_path, folder, should_hash_fname)
-                    os.remove(temp_path)
-                else:
-                    os.remove(temp_path)
-                    raise Exception
-            copied_files[file_link] = dest
+                os.remove(temp_path)
+                #else:
+                #    os.remove(temp_path)
+                #    raise Exception
+            if dest is not None:
+                copied_files[file_link] = dest
         # TODO: this regex is not quite right with the number of slashes
         elif re.search('C:[/\\\\].+', file_link):
             dest = copy_file(file_link, folder, should_hash_fname)
             copied_files[file_link] = dest
         if dest is not None:
             new_paths.append(dest)
+    # TODO: to correct but, we need to return a tuple here (new_paths, errors) and errors boolean determines whether row added to new.csv or errors.csv
     return new_paths
 
 

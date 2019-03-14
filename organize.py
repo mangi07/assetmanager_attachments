@@ -132,6 +132,7 @@ def move_files(from_list, folder, should_hash_fname):
     from_list = from_list.split(',')
     search_str = '(http|https|file):/{2,3}([^ }]+)'
     
+    errors = False
     for file_link in from_list:
         if file_link in copied_files:
             # In this case, the file referred to in this row was already moved during a previous row iteration.
@@ -156,20 +157,13 @@ def move_files(from_list, folder, should_hash_fname):
                 # if so, simply call function copy_file
                 temp_path = get_dest_path("temp", url)
                 open(temp_path, 'wb').write(r.content)
-                # TODO: bug was not caught where, in a group of online file attachments belonging to an asset,
-                # TODO:     one of them fails to download or downloads a corrupt file,
-                # TODO:     so that previous successful downloads/copies to "assets" were not added to new_paths
-                # TODO:     since the else clause raised an exception.
-                # TODO:     Solution: make sure all successful downloads/copies to "assets" are added to new_paths
-                # TODO:     so that row[29] (representing list of photo file paths) is set correcly in the 'with' clause below.
-                # TODO:     To test this, try assets 0 through 10 to see if photo 'assets\\30.JPG'
-                # TODO:     (and the other successful files also belonging to asset # 9) is properly referenced in errors.csv
+                
                 if verify_file(temp_path):
                     dest = copy_file(temp_path, folder, should_hash_fname)
+                else:
+                    dest = file_link
+                    errors = True
                 os.remove(temp_path)
-                #else:
-                #    os.remove(temp_path)
-                #    raise Exception
             if dest is not None:
                 copied_files[file_link] = dest
         # TODO: this regex is not quite right with the number of slashes
@@ -178,8 +172,7 @@ def move_files(from_list, folder, should_hash_fname):
             copied_files[file_link] = dest
         if dest is not None:
             new_paths.append(dest)
-    # TODO: to correct but, we need to return a tuple here (new_paths, errors) and errors boolean determines whether row added to new.csv or errors.csv
-    return new_paths
+    return (new_paths, errors)
 
 
 with open(filename, 'r', newline='') as csvfile:
@@ -195,27 +188,23 @@ with open(filename, 'r', newline='') as csvfile:
 
         # catch runtime errors such as file not found
         # and append the row causing error to a separate csv to be dealt with later
-        # because we want the script to make one pass through the original asset listing without stopping
-        try:
-            new_photo_paths = move_files(photos, "assets", False)
-            if len(new_photo_paths) > 0:
-                row[29] = new_photo_paths
+        new_photo_paths, asset_errors = move_files(photos, "assets", False)
+        if len(new_photo_paths) > 0:
+            row[29] = new_photo_paths
 
-            new_invoice_paths = move_files(invoices, "invoices", True)
-            if len(new_invoice_paths) > 0:
-                row[40] = new_invoice_paths
+        new_invoice_paths, invoice_errors = move_files(invoices, "invoices", True)
+        if len(new_invoice_paths) > 0:
+            row[40] = new_invoice_paths
 
-            # TODO: get files from "OTHER LINKS" column
-        except:
+        # TODO: get files from "OTHER LINKS" column
+        if asset_errors or invoice_errors:
             with open("errors.csv", 'a', newline='') as ef:
                 writer = csv.writer(ef)
                 writer.writerow(row)
-                continue
-        # TODO: convert cells of this nature -- '['']' OR '['','']' etc. -- to this: ''
-
-        with open(new_filename, 'a', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerow(row)
+        else:
+            with open(new_filename, 'a', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow(row)
 
         # debug
         #print("*******************")

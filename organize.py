@@ -8,7 +8,7 @@ In order to prepare attachments for asset listings on django...
 
 Consolidate photos and pdfs into new folders.
 Their links are read in from a csv file.
-Some are on the local file system and others require download over https.
+Some are on the local file system and others require download over http or https.
 
 New csv should be output as well, indicating the new file locations of asset attachments,
 which will make it easier to link the attachments after csv import to django db.
@@ -17,7 +17,7 @@ TODO: may be better with class-based preprocessing on file urls - separate out t
 
 ARGUMENTS:
 <filename>.csv : the name of the file to process
-pic_start_num : the starting number for asset pics to be named
+PIC_START_NUM : the starting number for asset pics to be named
 
 """
 
@@ -33,19 +33,34 @@ import requests
 from PIL import Image
 
 
-filename = sys.argv[1]
-new_filename = "new.csv"
-pic_start_num = int(sys.argv[2])
+FILENAME = sys.argv[1] # input file
+NEW_FILENAME = sys.argv[2] # output file
+#if os.path.isfile(NEW_FILENAME):
+#    print("Output file " + NEW_FILENAME + " already exists.")
+#    exit()
+PIC_START_NUM = int(sys.argv[3])
 
+def getPicStartNum(folder):
+    files = []
+    for (dirpath, dirnames, filenames) in os.walk(folder):
+        files.extend(filenames)
+        break
+    nums = [int(num) for num, ext in list(map(lambda f : os.path.splitext(f), files))]
+    return max(nums) + 1
+    
 
 if not os.path.isdir("assets"):
     os.mkdir("assets")
+    file_counter = PIC_START_NUM
+else:
+    file_counter = getPicStartNum("assets")
+print("file_counter: " + str(file_counter)) # debug
 if not os.path.isdir("invoices"):
     os.mkdir("invoices")
 if not os.path.isdir("temp"):
     os.mkdir("temp")
 copied_files = {} # key: old path, value: new path (dest)
-file_counter = pic_start_num
+error_links = {}
 debug_counter = 0
 
 
@@ -140,7 +155,15 @@ def move_files(from_list, folder, should_hash_fname):
             dest = copied_files[file_link]
             new_paths.append(dest)
             continue
+        if file_link in error_links:
+            dest = error_links[file_link]
+            new_paths.append(dest)
+            errors = True
+            continue
+        
         match = re.search(search_str, file_link)
+        url = ""
+        
         if match:
             protocol = match.group(1)
             if protocol == "file":
@@ -148,8 +171,8 @@ def move_files(from_list, folder, should_hash_fname):
                 dest = copy_file(url, folder, should_hash_fname)
             elif protocol == "https" or protocol == "http":
                 url = match.group(0)
-                print(url)
                 #a = urlparse(url)
+                print(url)
                 r = requests.get(url, allow_redirects=True)
                 debug_counter = debug_counter + 1
                 # download the file to a temp dir
@@ -161,11 +184,13 @@ def move_files(from_list, folder, should_hash_fname):
                 if verify_file(temp_path):
                     dest = copy_file(temp_path, folder, should_hash_fname)
                 else:
-                    dest = file_link
+                    dest = url
                     errors = True
                 os.remove(temp_path)
-            if dest is not None:
+            if dest is not None and dest != "" and not errors:
                 copied_files[file_link] = dest
+            if dest is not None and dest != "" and errors:
+                error_links[file_link] = dest
         # TODO: this regex is not quite right with the number of slashes
         elif re.search('C:[/\\\\].+', file_link):
             dest = copy_file(file_link, folder, should_hash_fname)
@@ -175,12 +200,13 @@ def move_files(from_list, folder, should_hash_fname):
     return (new_paths, errors)
 
 
-with open(filename, 'r', newline='') as csvfile:
+with open(FILENAME, 'r', newline='') as csvfile:
     dialect = csv.Sniffer().sniff(csvfile.read(1024))
     csvfile.seek(0)
     reader = csv.reader(csvfile, dialect)
     
     for row in reader:
+        #import pdb; pdb.set_trace() # debug
         id = row[0]
         descr = row[1]
         photos = row[29]
@@ -189,12 +215,10 @@ with open(filename, 'r', newline='') as csvfile:
         # catch runtime errors such as file not found
         # and append the row causing error to a separate csv to be dealt with later
         new_photo_paths, asset_errors = move_files(photos, "assets", False)
-        if len(new_photo_paths) > 0:
-            row[29] = new_photo_paths
+        row[29] = new_photo_paths
 
         new_invoice_paths, invoice_errors = move_files(invoices, "invoices", True)
-        if len(new_invoice_paths) > 0:
-            row[40] = new_invoice_paths
+        row[40] = new_invoice_paths
 
         # TODO: get files from "OTHER LINKS" column
         if asset_errors or invoice_errors:
@@ -202,7 +226,7 @@ with open(filename, 'r', newline='') as csvfile:
                 writer = csv.writer(ef)
                 writer.writerow(row)
         else:
-            with open(new_filename, 'a', newline='') as f:
+            with open(NEW_FILENAME, 'a', newline='') as f:
                 writer = csv.writer(f)
                 writer.writerow(row)
 
